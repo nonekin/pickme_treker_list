@@ -1,0 +1,780 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pick-me Habit Tracker ✨</title>
+  <style>
+    :root{
+      --bg1:#fff7fb;
+      --bg2:#f3f7ff;
+      --ink:#1f2430;
+      --muted:#6b7280;
+      --card:#ffffffcc;
+      --stroke:#ffffff;
+      --shadow: 0 10px 30px rgba(17, 24, 39, .10);
+      --shadow2: 0 6px 18px rgba(17, 24, 39, .08);
+      --r20: 20px;
+      --r16: 16px;
+      --r12: 12px;
+      --pink:#FCE7F3;
+      --lav:#EDE9FE;
+      --mint:#D1FAE5;
+      --peach:#FFEDD5;
+      --sky:#E0F2FE;
+      --ok:#16a34a;
+      --warn:#f59e0b;
+      --bad:#ef4444;
+    }
+
+    * { box-sizing: border-box; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, "SF Pro Display", "Inter", Segoe UI, Roboto, Arial, sans-serif;
+      color:var(--ink);
+      background:
+        radial-gradient(1200px 600px at 20% 0%, var(--bg2), transparent 60%),
+        radial-gradient(1200px 600px at 80% 20%, var(--bg1), transparent 60%),
+        linear-gradient(180deg, #fff, #fafafa);
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+    }
+
+    .app{
+      width:min(980px, 100%);
+      display:grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap:16px;
+    }
+
+    @media (max-width: 880px){
+      .app{ grid-template-columns: 1fr; }
+    }
+
+    .panel{
+      background: var(--card);
+      backdrop-filter: blur(10px);
+      border:1px solid rgba(255,255,255,.8);
+      border-radius: var(--r20);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+
+    .header{
+      padding:18px 18px 14px;
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      background:
+        linear-gradient(135deg, rgba(252,231,243,.8), rgba(224,242,254,.8));
+      border-bottom: 1px solid rgba(255,255,255,.75);
+    }
+
+    .title h1{
+      margin:0;
+      font-size: 20px;
+      letter-spacing:-0.02em;
+    }
+    .title p{
+      margin:6px 0 0;
+      color:rgba(31,36,48,.7);
+      font-size: 13px;
+    }
+
+    .mood{
+      display:flex;
+      align-items:center;
+      gap:6px;
+      padding:10px;
+      background: rgba(255,255,255,.65);
+      border: 1px solid rgba(255,255,255,.85);
+      border-radius: 999px;
+      box-shadow: var(--shadow2);
+      user-select:none;
+    }
+    .mood span{ font-size: 18px; cursor:pointer; opacity:.55; transition:.15s; }
+    .mood span.active{ opacity:1; transform: translateY(-1px); }
+    .mood small{ color:var(--muted); margin-right:6px; font-size: 12px; }
+
+    .content{ padding:16px; }
+
+    .toprow{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom: 12px;
+      flex-wrap:wrap;
+    }
+
+    .chips{ display:flex; gap:8px; flex-wrap:wrap; }
+    .chip{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding:10px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.75);
+      border:1px solid rgba(255,255,255,.9);
+      box-shadow: var(--shadow2);
+      font-size: 12.5px;
+      color: rgba(31,36,48,.82);
+    }
+    .chip b{ font-weight:700; }
+    .chip .dot{
+      width:9px; height:9px; border-radius: 50%;
+      background: var(--sky);
+      box-shadow: 0 0 0 4px rgba(224,242,254,.35);
+    }
+
+    .btn{
+      border:0;
+      cursor:pointer;
+      padding:11px 14px;
+      border-radius: 14px;
+      font-weight:700;
+      color: rgba(31,36,48,.9);
+      background: rgba(255,255,255,.78);
+      border: 1px solid rgba(255,255,255,.95);
+      box-shadow: var(--shadow2);
+      transition: transform .12s ease, box-shadow .12s ease, background .12s ease;
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      user-select:none;
+    }
+    .btn:hover{ transform: translateY(-1px); box-shadow: var(--shadow); }
+    .btn:active{ transform: translateY(0px) scale(.99); }
+    .btn.primary{
+      background: linear-gradient(135deg, rgba(209,250,229,.95), rgba(224,242,254,.95));
+    }
+    .btn.danger{
+      background: linear-gradient(135deg, rgba(255,237,213,.95), rgba(252,231,243,.95));
+    }
+
+    .list{
+      display:grid;
+      gap:10px;
+      margin-top: 10px;
+    }
+
+    .habit{
+      position:relative;
+      border-radius: var(--r16);
+      border:1px solid rgba(255,255,255,.9);
+      box-shadow: var(--shadow2);
+      padding:12px 12px;
+      background: rgba(255,255,255,.78);
+      overflow:hidden;
+      display:grid;
+      grid-template-columns: auto 1fr auto;
+      gap:10px;
+      align-items:center;
+    }
+
+    .habit::before{
+      content:"";
+      position:absolute;
+      inset:-2px;
+      background: var(--accent, var(--lav));
+      opacity:.55;
+      filter: blur(0px);
+      z-index:0;
+    }
+    .habit > * { position:relative; z-index:1; }
+
+    .avatar{
+      width:44px; height:44px;
+      border-radius: 16px;
+      display:grid;
+      place-items:center;
+      font-size: 22px;
+      background: rgba(255,255,255,.75);
+      border:1px solid rgba(255,255,255,.95);
+      box-shadow: 0 10px 25px rgba(17,24,39,.08);
+    }
+
+    .hmeta{ min-width: 0; }
+    .hmeta .name{
+      font-weight: 800;
+      letter-spacing:-0.01em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .hmeta .sub{
+      margin-top:4px;
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      color: rgba(31,36,48,.65);
+      font-size: 12px;
+      align-items:center;
+    }
+
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 9px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.65);
+      border:1px solid rgba(255,255,255,.9);
+    }
+
+    .toggle{
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+
+    .check{
+      width:44px;
+      height:44px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.95);
+      background: rgba(255,255,255,.70);
+      box-shadow: 0 12px 25px rgba(17,24,39,.08);
+      display:grid;
+      place-items:center;
+      cursor:pointer;
+      transition:.14s ease;
+      user-select:none;
+    }
+    .check:hover{ transform: translateY(-1px); }
+    .check.done{
+      background: rgba(22,163,74,.15);
+      border-color: rgba(22,163,74,.35);
+    }
+    .check svg{ width:22px; height:22px; opacity:.25; }
+    .check.done svg{ opacity:1; }
+
+    .side{
+      padding:16px;
+      display:grid;
+      gap:12px;
+    }
+    .card{
+      border-radius: var(--r20);
+      border:1px solid rgba(255,255,255,.9);
+      background: rgba(255,255,255,.78);
+      box-shadow: var(--shadow2);
+      padding:14px;
+    }
+    .card h2{
+      margin:0;
+      font-size: 15px;
+      letter-spacing:-0.01em;
+    }
+    .card p{
+      margin:8px 0 0;
+      color: rgba(31,36,48,.65);
+      font-size: 12.5px;
+      line-height: 1.4;
+    }
+
+    .mini{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+      margin-top: 10px;
+    }
+    .stat{
+      border-radius: 16px;
+      padding:12px;
+      background: linear-gradient(135deg, rgba(224,242,254,.8), rgba(252,231,243,.8));
+      border:1px solid rgba(255,255,255,.95);
+    }
+    .stat b{ font-size: 18px; display:block; }
+    .stat small{ color: rgba(31,36,48,.65); }
+
+    .addrow{
+      display:flex; gap:10px; margin-top: 12px; flex-wrap:wrap;
+    }
+    input, select{
+      width:100%;
+      padding:12px 12px;
+      border-radius: 14px;
+      border:1px solid rgba(255,255,255,.95);
+      background: rgba(255,255,255,.75);
+      box-shadow: var(--shadow2);
+      outline:none;
+      font-size: 14px;
+    }
+    .grid2{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+    }
+
+    .footer{
+      margin-top:10px;
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+      color: rgba(31,36,48,.55);
+      font-size: 12px;
+    }
+
+    /* confetti */
+    .confetti{
+      position: fixed;
+      inset: 0;
+      pointer-events:none;
+      overflow:hidden;
+      z-index: 999;
+    }
+    .confetti i{
+      position:absolute;
+      top:-20px;
+      width:10px;
+      height:16px;
+      border-radius: 3px;
+      opacity:.9;
+      animation: fall linear forwards;
+      filter: drop-shadow(0 8px 10px rgba(17,24,39,.10));
+    }
+    @keyframes fall{
+      to{
+        transform: translateY(calc(100vh + 40px)) rotate(720deg);
+        opacity: .98;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+    <section class="panel">
+      <div class="header">
+        <div class="title">
+          <h1>Pick-me Habit Tracker ✨</h1>
+          <p id="subtitle">Сегодня — …</p>
+        </div>
+
+        <div class="mood" id="mood">
+          <small>mood</small>
+          <span data-m="🙂">🙂</span>
+          <span data-m="😐">😐</span>
+          <span data-m="😵">😵</span>
+        </div>
+      </div>
+
+      <div class="content">
+        <div class="toprow">
+          <div class="chips">
+            <div class="chip"><span class="dot"></span>Выполнено: <b id="doneCount">0</b>/<b id="totalCount">0</b></div>
+            <div class="chip">Серия дня: <b id="dayStreak">0</b> 🔥</div>
+            <div class="chip">Милота: <b id="cuteness">100</b>% 💗</div>
+          </div>
+
+          <button class="btn primary" id="closeDayBtn">Закрыть день ✨</button>
+        </div>
+
+        <div class="list" id="habitList"></div>
+
+        <div class="footer">
+          <span>Сохраняется в браузере (localStorage).</span>
+          <span>Подсказка: добавь свои привычки справа →</span>
+        </div>
+      </div>
+    </section>
+
+    <aside class="panel">
+      <div class="side">
+        <div class="card">
+          <h2>Добавить привычку</h2>
+          <p>Сделаем максимально “пикми”: эмодзи + пастель + добрые названия.</p>
+
+          <div class="addrow">
+            <div class="grid2">
+              <input id="newTitle" placeholder="Название (например, “вода”)"/>
+              <input id="newEmoji" placeholder="Эмодзи (например, 💧)" maxlength="4"/>
+            </div>
+            <select id="newColor">
+              <option value="pink">Пастельный розовый</option>
+              <option value="lavender">Лавандовый</option>
+              <option value="mint">Мятный</option>
+              <option value="peach">Персиковый</option>
+              <option value="sky">Небесный</option>
+            </select>
+
+            <button class="btn" id="addBtn">Добавить ➕</button>
+            <button class="btn danger" id="resetBtn">Сбросить день ↺</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Мини-статы</h2>
+          <p>Очень лёгкая мотивация, без давления.</p>
+
+          <div class="mini">
+            <div class="stat">
+              <b id="bestStreak">0</b>
+              <small>лучший стрик</small>
+            </div>
+            <div class="stat">
+              <b id="weekRate">0%</b>
+              <small>за 7 дней</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Список</h2>
+          <p>Удаление: кнопка “×” рядом с привычкой. Можно держать 5–12 привычек, иначе перегруз.</p>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="confetti" id="confetti" aria-hidden="true"></div>
+
+<script>
+  // ---------- Utils ----------
+  const pad2 = n => String(n).padStart(2,'0');
+  const todayKey = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+  };
+  const fmtDate = () => {
+    const d = new Date();
+    return d.toLocaleDateString("ru-RU", { weekday:"long", year:"numeric", month:"long", day:"numeric" });
+  };
+
+  const LS = {
+    get(k, fallback){
+      try{ return JSON.parse(localStorage.getItem(k)) ?? fallback; }
+      catch(e){ return fallback; }
+    },
+    set(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
+  };
+
+  // ---------- State ----------
+  const STATE_KEY = "pickme_tracker_v1";
+  const state = LS.get(STATE_KEY, {
+    mood: "🙂",
+    habits: [
+      { id: crypto.randomUUID(), title: "вода", emoji:"💧", color:"sky", createdAt: Date.now() },
+      { id: crypto.randomUUID(), title: "растяжка", emoji:"🧘", color:"lavender", createdAt: Date.now() },
+      { id: crypto.randomUUID(), title: "без сладкого", emoji:"🍓", color:"pink", createdAt: Date.now() },
+      { id: crypto.randomUUID(), title: "10 минут чтения", emoji:"📖", color:"peach", createdAt: Date.now() },
+    ],
+    // logs: { "YYYY-MM-DD": { habitId: true/false } }
+    logs: {},
+    // dayCompletions: { "YYYY-MM-DD": true } (для "серии дня")
+    days: {}
+  });
+
+  const save = () => LS.set(STATE_KEY, state);
+
+  // ---------- DOM ----------
+  const elSubtitle = document.getElementById("subtitle");
+  const elMood = document.getElementById("mood");
+  const elList = document.getElementById("habitList");
+
+  const doneCountEl = document.getElementById("doneCount");
+  const totalCountEl = document.getElementById("totalCount");
+  const dayStreakEl = document.getElementById("dayStreak");
+  const cutenessEl = document.getElementById("cuteness");
+
+  const bestStreakEl = document.getElementById("bestStreak");
+  const weekRateEl = document.getElementById("weekRate");
+
+  const closeDayBtn = document.getElementById("closeDayBtn");
+  const addBtn = document.getElementById("addBtn");
+  const resetBtn = document.getElementById("resetBtn");
+
+  const newTitle = document.getElementById("newTitle");
+  const newEmoji = document.getElementById("newEmoji");
+  const newColor = document.getElementById("newColor");
+
+  // ---------- Logic ----------
+  function getTodayLog(){
+    const k = todayKey();
+    state.logs[k] = state.logs[k] || {};
+    return state.logs[k];
+  }
+
+  function isDoneToday(habitId){
+    const log = getTodayLog();
+    return !!log[habitId];
+  }
+
+  function setDoneToday(habitId, done){
+    const k = todayKey();
+    state.logs[k] = state.logs[k] || {};
+    state.logs[k][habitId] = !!done;
+    save();
+  }
+
+  function calcDoneCounts(){
+    const total = state.habits.length;
+    const done = state.habits.reduce((acc,h)=> acc + (isDoneToday(h.id) ? 1 : 0), 0);
+    return { done, total };
+  }
+
+  function calcDayStreak(){
+    // серия закрытых дней подряд (когда все привычки выполнены)
+    const keys = Object.keys(state.days).sort(); // YYYY-MM-DD
+    if(keys.length === 0) return 0;
+
+    const today = todayKey();
+    // считаем до сегодняшнего дня включительно, если сегодня закрыт — ок, иначе считаем до вчера
+    const end = state.days[today] ? today : shiftDate(today, -1);
+
+    let streak = 0;
+    let cursor = end;
+    while(state.days[cursor]){
+      streak++;
+      cursor = shiftDate(cursor, -1);
+    }
+    return streak;
+  }
+
+  function shiftDate(yyyyMmDd, deltaDays){
+    const [y,m,d] = yyyyMmDd.split("-").map(Number);
+    const dt = new Date(y, m-1, d);
+    dt.setDate(dt.getDate() + deltaDays);
+    return `${dt.getFullYear()}-${pad2(dt.getMonth()+1)}-${pad2(dt.getDate())}`;
+  }
+
+  function calcBestStreak(){
+    // лучший стрик по закрытым дням в истории
+    const doneDays = Object.keys(state.days).filter(k => state.days[k]).sort();
+    let best = 0, cur = 0;
+    let prev = null;
+    for(const day of doneDays){
+      if(!prev){
+        cur = 1;
+      } else {
+        const expected = shiftDate(prev, 1);
+        cur = (day === expected) ? (cur + 1) : 1;
+      }
+      best = Math.max(best, cur);
+      prev = day;
+    }
+    return best;
+  }
+
+  function calcWeekRate(){
+    const today = todayKey();
+    let totalDays = 7;
+    let good = 0;
+    for(let i=0;i<7;i++){
+      const day = shiftDate(today, -i);
+      if(state.days[day]) good++;
+    }
+    return Math.round((good/totalDays)*100);
+  }
+
+  function renderMood(){
+    const current = state.mood || "🙂";
+    [...elMood.querySelectorAll("span[data-m]")].forEach(s=>{
+      s.classList.toggle("active", s.dataset.m === current);
+    });
+  }
+
+  function render(){
+    elSubtitle.textContent = `Сегодня — ${fmtDate()}`;
+
+    // list
+    elList.innerHTML = "";
+    for(const h of state.habits){
+      const row = document.createElement("div");
+      row.className = "habit";
+      row.style.setProperty("--accent", getAccent(h.color));
+
+      const avatar = document.createElement("div");
+      avatar.className = "avatar";
+      avatar.textContent = h.emoji || "✨";
+
+      const meta = document.createElement("div");
+      meta.className = "hmeta";
+
+      const name = document.createElement("div");
+      name.className = "name";
+      name.textContent = h.title;
+
+      const sub = document.createElement("div");
+      sub.className = "sub";
+
+      // simple streak per habit (consecutive done days incl. today if done)
+      const habitStreak = calcHabitStreak(h.id);
+      const pill1 = document.createElement("span");
+      pill1.className = "pill";
+      pill1.textContent = `🔥 ${habitStreak}`;
+
+      const pill2 = document.createElement("span");
+      pill2.className = "pill";
+      pill2.textContent = `🎀 ${pickTag(h.color)}`;
+
+      sub.append(pill1, pill2);
+      meta.append(name, sub);
+
+      const toggle = document.createElement("div");
+      toggle.className = "toggle";
+
+      const del = document.createElement("button");
+      del.className = "btn";
+      del.style.padding = "10px 12px";
+      del.style.borderRadius = "14px";
+      del.textContent = "×";
+      del.title = "Удалить привычку";
+      del.onclick = () => {
+        state.habits = state.habits.filter(x => x.id !== h.id);
+        // cleanup today's log entry
+        const log = getTodayLog();
+        delete log[h.id];
+        save();
+        render();
+      };
+
+      const check = document.createElement("div");
+      check.className = "check";
+      const done = isDoneToday(h.id);
+      if(done) check.classList.add("done");
+
+      check.innerHTML = `
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      `;
+
+      check.onclick = () => {
+        const next = !isDoneToday(h.id);
+        setDoneToday(h.id, next);
+        if(next) popConfetti(16);
+        render();
+      };
+
+      toggle.append(del, check);
+
+      row.append(avatar, meta, toggle);
+      elList.append(row);
+    }
+
+    const {done,total} = calcDoneCounts();
+    doneCountEl.textContent = String(done);
+    totalCountEl.textContent = String(total);
+
+    // cuteness is a silly metric: mood weight + completion
+    const moodBoost = (state.mood === "🙂") ? 10 : (state.mood === "😐") ? 0 : -10;
+    const base = total ? Math.round((done/total)*100) : 100;
+    cutenessEl.textContent = String(Math.max(0, Math.min(100, base + moodBoost)));
+
+    dayStreakEl.textContent = String(calcDayStreak());
+    bestStreakEl.textContent = String(calcBestStreak());
+    weekRateEl.textContent = `${calcWeekRate()}%`;
+
+    renderMood();
+  }
+
+  function getAccent(key){
+    const m = { pink:"var(--pink)", lavender:"var(--lav)", mint:"var(--mint)", peach:"var(--peach)", sky:"var(--sky)" };
+    return m[key] || "var(--lav)";
+  }
+  function pickTag(key){
+    const m = { pink:"sweet", lavender:"calm", mint:"fresh", peach:"cozy", sky:"soft" };
+    return m[key] || "cute";
+  }
+
+  function calcHabitStreak(habitId){
+    // consecutive done days up to today
+    const today = todayKey();
+    let streak = 0;
+    let cursor = today;
+    while(true){
+      const log = state.logs[cursor] || {};
+      if(log[habitId]){
+        streak++;
+        cursor = shiftDate(cursor, -1);
+      } else break;
+    }
+    return streak;
+  }
+
+  // ---------- Events ----------
+  elMood.addEventListener("click", (e)=>{
+    const t = e.target;
+    if(t && t.dataset && t.dataset.m){
+      state.mood = t.dataset.m;
+      save();
+      render();
+    }
+  });
+
+  closeDayBtn.addEventListener("click", ()=>{
+    const {done,total} = calcDoneCounts();
+    const k = todayKey();
+    if(total === 0){
+      alert("Добавь хотя бы одну привычку справа 🙂");
+      return;
+    }
+    if(done < total){
+      alert("Ещё чуть-чуть: закрой все привычки, и день станет ✨закрытым✨");
+      return;
+    }
+    state.days[k] = true;
+    save();
+    popConfetti(60);
+    render();
+  });
+
+  addBtn.addEventListener("click", ()=>{
+    const title = (newTitle.value || "").trim();
+    const emoji = (newEmoji.value || "").trim() || "✨";
+    const color = newColor.value;
+
+    if(!title){
+      alert("Напиши название привычки (например, “вода”) 🙂");
+      return;
+    }
+    state.habits.unshift({ id: crypto.randomUUID(), title, emoji, color, createdAt: Date.now() });
+    newTitle.value = "";
+    newEmoji.value = "";
+    save();
+    render();
+  });
+
+  resetBtn.addEventListener("click", ()=>{
+    const k = todayKey();
+    state.logs[k] = {};
+    delete state.days[k];
+    save();
+    render();
+  });
+
+  // ---------- Confetti ----------
+  function popConfetti(n){
+    const box = document.getElementById("confetti");
+    const colors = ["#FCE7F3","#EDE9FE","#D1FAE5","#FFEDD5","#E0F2FE","#ffffff"];
+    for(let i=0;i<n;i++){
+      const p = document.createElement("i");
+      const left = Math.random()*100;
+      const delay = Math.random()*0.15;
+      const dur = 1.2 + Math.random()*1.1;
+      const size = 8 + Math.random()*8;
+      p.style.left = left + "vw";
+      p.style.animationDuration = dur + "s";
+      p.style.animationDelay = delay + "s";
+      p.style.width = size + "px";
+      p.style.height = (size*1.6) + "px";
+      p.style.background = colors[(Math.random()*colors.length)|0];
+      p.style.transform = `translateY(0) rotate(${Math.random()*180}deg)`;
+      box.appendChild(p);
+
+      setTimeout(()=> p.remove(), (dur + delay) * 1000 + 200);
+    }
+  }
+
+  // ---------- Init ----------
+  render();
+</script>
+</body>
+</html>
