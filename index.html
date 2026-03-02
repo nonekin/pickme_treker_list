@@ -560,9 +560,12 @@
 
             <button class="btn" id="addBtn">Добавить ➕</button>
             <button class="btn danger" id="resetBtn">Сбросить день ↺</button>
+            <button class="btn" id="todayBtn">Сегодня</button>
+<button class="btn" id="yesterdayBtn">Вчера ✎</button>
             <div class="calBtnRow">
               <button class="btn" id="openCalBtn">Календарь 🗓️</button>
             </div>
+
           </div>
         </div>
 
@@ -648,6 +651,11 @@
     const d = new Date();
     return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
   };
+  function yesterdayKey(){
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+}
   const fmtDate = () => {
     const d = new Date();
     return d.toLocaleDateString("ru-RU", { weekday:"long", year:"numeric", month:"long", day:"numeric" });
@@ -736,29 +744,29 @@ const calGrid = document.getElementById("calGrid");
   const rewardModal = document.getElementById("rewardModal");
   const rewardLaterBtn = document.getElementById("rewardLaterBtn");
   const rewardClaimBtn = document.getElementById("rewardClaimBtn");
-
+  const todayBtn = document.getElementById("todayBtn");
+const yesterdayBtn = document.getElementById("yesterdayBtn");
+let activeDay = todayKey(); 
   // ---------- Logic ----------
-  function getTodayLog(){
-    const k = todayKey();
-    state.logs[k] = state.logs[k] || {};
-    return state.logs[k];
-  }
+  function getDayLog(dayKey){
+  state.logs[dayKey] = state.logs[dayKey] || {};
+  return state.logs[dayKey];
+}
 
-  function isDoneToday(habitId){
-    const log = getTodayLog();
-    return !!log[habitId];
-  }
+function isDoneOnDay(habitId, dayKey = activeDay){
+  const log = getDayLog(dayKey);
+  return !!log[habitId];
+}
 
-  function setDoneToday(habitId, done){
-    const k = todayKey();
-    state.logs[k] = state.logs[k] || {};
-    state.logs[k][habitId] = !!done;
-    save();
-  }
+function setDoneOnDay(habitId, done, dayKey = activeDay){
+  state.logs[dayKey] = state.logs[dayKey] || {};
+  state.logs[dayKey][habitId] = !!done;
+  save();
+}
 
   function calcDoneCounts(){
     const total = state.habits.length;
-    const done = state.habits.reduce((acc,h)=> acc + (isDoneToday(h.id) ? 1 : 0), 0);
+    const done = state.habits.reduce((acc,h)=> acc + (isDoneOnDay(h.id) ? 1 : 0), 0);
     return { done, total };
   }
 
@@ -1044,7 +1052,9 @@ function renderCalendar(){
   }
 
   function render(){
-    elSubtitle.textContent = `Сегодня — ${fmtDate()}`;
+    const isToday = activeDay === todayKey();
+const label = isToday ? "Сегодня" : "Вчера";
+elSubtitle.textContent = `${label} — ${activeDay}`;
 
     elList.innerHTML = "";
     for(const h of state.habits){
@@ -1089,7 +1099,7 @@ function renderCalendar(){
       del.title = "Удалить привычку";
       del.onclick = () => {
         state.habits = state.habits.filter(x => x.id !== h.id);
-        const log = getTodayLog();
+        const log = getDayLog(activeDay);
         delete log[h.id];
         save();
         render();
@@ -1097,7 +1107,7 @@ function renderCalendar(){
 
       const check = document.createElement("div");
       check.className = "check";
-      const done = isDoneToday(h.id);
+      const done = isDoneOnDay(h.id);
       if(done) check.classList.add("done");
 
       check.innerHTML = `
@@ -1107,9 +1117,9 @@ function renderCalendar(){
       `;
 
       check.onclick = () => {
-        const was = isDoneToday(h.id);
+        const was = isDoneOnDay(h.id);
         const next = !was;
-        setDoneToday(h.id, next);
+        setDoneOnDay(h.id, next);
 
         if(!was && next){
           popConfetti(16); // конфетти оставляем
@@ -1141,6 +1151,15 @@ function renderCalendar(){
   }
 
   // ---------- Events ----------
+  todayBtn.addEventListener("click", ()=>{
+  activeDay = todayKey();
+  render();
+});
+
+yesterdayBtn.addEventListener("click", ()=>{
+  activeDay = yesterdayKey();
+  render();
+});
   elMood.addEventListener("click", (e)=>{
     const t = e.target;
     if(t && t.dataset && t.dataset.m){
@@ -1152,36 +1171,32 @@ function renderCalendar(){
   openCalBtn.addEventListener("click", openCal);
 calCloseBtn.addEventListener("click", closeCal);
 
-  closeDayBtn.addEventListener("click", ()=>{
+closeDayBtn.addEventListener("click", ()=>{
   const {done,total} = calcDoneCounts();
-  const k = todayKey();
+  const k = activeDay;
 
   if(total === 0){
     alert("Добавь хотя бы одну привычку 🙂");
     return;
   }
 
-  // 1) сохраняем статистику дня
   const ratio = total ? (done / total) : 0;
   state.dayStats[k] = { done, total, ratio };
 
-  // 2) определяем хороший/плохой день (порог можно менять)
-  const GOOD_THRESHOLD = 0.35;          // 35% выполнения = уже хороший день
+  const GOOD_THRESHOLD = 0.35;
   const good = ratio >= GOOD_THRESHOLD;
   state.days[k] = good;
 
-  // 3) начисляем очки ТОЛЬКО при закрытии дня
-  //    Например: +done очков (сколько задач сделал — столько очков)
+  // очки начисляем только при закрытии дня
   const earned = done;
 
-  // если день уже закрывали раньше — пересчитаем корректно
+  // пересчёт очков: если день уже закрывали — корректно заменить
   const prevEarned = state.pointsByDay[k] || 0;
   state.points = Math.max(0, (state.points || 0) - prevEarned + earned);
   state.pointsByDay[k] = earned;
 
   save();
 
-  // визуал
   if(good) popConfetti(60);
   if((state.points || 0) > 0 && (state.points % POINTS_GOAL === 0)){
     popConfetti(90);
@@ -1211,14 +1226,14 @@ calCloseBtn.addEventListener("click", closeCal);
   });
 
   resetBtn.addEventListener("click", ()=>{
-  const k = todayKey();
+  const k = activeDay;
 
-  // откат очков, если день уже закрывали
+  // откат очков за этот день
   const prevEarned = state.pointsByDay?.[k] || 0;
   state.points = Math.max(0, (state.points || 0) - prevEarned);
   if(state.pointsByDay) delete state.pointsByDay[k];
 
-  // очищаем логи/оценку дня
+  // очистка логов и статуса дня
   state.logs[k] = {};
   if(state.days) delete state.days[k];
   if(state.dayStats) delete state.dayStats[k];
