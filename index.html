@@ -11,20 +11,15 @@
       --ink:#1f2430;
       --muted:#6b7280;
       --card:#ffffffcc;
-      --stroke:#ffffff;
       --shadow: 0 10px 30px rgba(17, 24, 39, .10);
       --shadow2: 0 6px 18px rgba(17, 24, 39, .08);
       --r20: 20px;
       --r16: 16px;
-      --r12: 12px;
       --pink:#FCE7F3;
       --lav:#EDE9FE;
       --mint:#D1FAE5;
       --peach:#FFEDD5;
       --sky:#E0F2FE;
-      --ok:#16a34a;
-      --warn:#f59e0b;
-      --bad:#ef4444;
     }
 
     * { box-sizing: border-box; }
@@ -49,7 +44,6 @@
       grid-template-columns: 1.15fr 0.85fr;
       gap:16px;
     }
-
     @media (max-width: 880px){
       .app{ grid-template-columns: 1fr; }
     }
@@ -182,7 +176,6 @@
       inset:-2px;
       background: var(--accent, var(--lav));
       opacity:.55;
-      filter: blur(0px);
       z-index:0;
     }
     .habit > * { position:relative; z-index:1; }
@@ -345,6 +338,120 @@
         opacity: .98;
       }
     }
+
+    /* --- Pick-me gallery + progress --- */
+    .progressWrap{
+      margin-top: 10px;
+      padding: 12px;
+      border-radius: var(--r16);
+      background: rgba(255,255,255,.75);
+      border:1px solid rgba(255,255,255,.95);
+      box-shadow: var(--shadow2);
+    }
+    .progressTop{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom: 10px;
+    }
+    .progressTop b{ font-size: 13px; }
+    .progressTop span{ color: rgba(31,36,48,.65); font-size: 12px; }
+
+    .bar{
+      height: 14px;
+      border-radius: 999px;
+      background: rgba(31,36,48,.08);
+      overflow:hidden;
+      border: 1px solid rgba(255,255,255,.9);
+    }
+    .bar > i{
+      display:block;
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(252,231,243,.95), rgba(224,242,254,.95), rgba(209,250,229,.95));
+      transition: width .25s ease;
+    }
+
+    .stickerGrid{
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap:10px;
+      margin-top: 10px;
+    }
+    .sticker{
+      border-radius: 18px;
+      border:1px solid rgba(255,255,255,.92);
+      background: rgba(255,255,255,.72);
+      box-shadow: var(--shadow2);
+      aspect-ratio: 1/1;
+      display:grid;
+      place-items:center;
+      overflow:hidden;
+      position:relative;
+    }
+    .sticker img{
+      width: 88%;
+      height: 88%;
+      object-fit: contain;
+      filter: drop-shadow(0 10px 16px rgba(17,24,39,.10));
+    }
+    .sticker small{
+      position:absolute;
+      bottom:8px;
+      left:10px;
+      font-size: 11px;
+      color: rgba(31,36,48,.55);
+    }
+
+    /* Reward modal */
+    .modalBackdrop{
+      position:fixed;
+      inset:0;
+      background: rgba(17,24,39,.35);
+      backdrop-filter: blur(6px);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index: 1000;
+      padding: 18px;
+    }
+    .modalBackdrop.show{ display:flex; }
+    .modal{
+      width:min(520px, 100%);
+      border-radius: 26px;
+      background: rgba(255,255,255,.86);
+      border:1px solid rgba(255,255,255,.95);
+      box-shadow: 0 20px 60px rgba(17,24,39,.20);
+      overflow:hidden;
+    }
+    .modalHead{
+      padding: 16px 18px;
+      background: linear-gradient(135deg, rgba(252,231,243,.9), rgba(224,242,254,.9));
+      border-bottom:1px solid rgba(255,255,255,.9);
+    }
+    .modalHead h3{
+      margin:0;
+      font-size: 16px;
+      letter-spacing:-0.01em;
+    }
+    .modalBody{
+      padding: 16px 18px 18px;
+    }
+    .modalBody p{
+      margin: 8px 0 0;
+      color: rgba(31,36,48,.70);
+      font-size: 13px;
+      line-height:1.45;
+    }
+    .modalActions{
+      margin-top: 14px;
+      display:flex;
+      gap:10px;
+      justify-content:flex-end;
+      flex-wrap:wrap;
+    }
   </style>
 </head>
 
@@ -394,7 +501,7 @@
           <div class="addrow">
             <div class="grid2">
               <input id="newTitle" placeholder="Название (например, “вода”)"/>
-              <input id="newEmoji" placeholder="Эмодзи (например, 💧)" maxlength="4"/>
+              <input id="newEmoji" placeholder="Эмодзи (например, 💧)" maxlength="8"/>
             </div>
             <select id="newColor">
               <option value="pink">Пастельный розовый</option>
@@ -426,6 +533,21 @@
         </div>
 
         <div class="card">
+          <h2>Pick-me corner 🎀</h2>
+          <p>Тут живут котики, бантики и твой прогресс к призу.</p>
+
+          <div class="progressWrap">
+            <div class="progressTop">
+              <b>Прогресс до призика</b>
+              <span><span id="pointsNow">0</span> / <span id="pointsGoal">40</span></span>
+            </div>
+            <div class="bar"><i id="pointsBar"></i></div>
+          </div>
+
+          <div class="stickerGrid" id="stickerGrid"></div>
+        </div>
+
+        <div class="card">
           <h2>Список</h2>
           <p>Удаление: кнопка “×” рядом с привычкой. Можно держать 5–12 привычек, иначе перегруз.</p>
         </div>
@@ -434,6 +556,22 @@
   </div>
 
   <div class="confetti" id="confetti" aria-hidden="true"></div>
+
+  <div class="modalBackdrop" id="rewardModal" aria-hidden="true">
+    <div class="modal">
+      <div class="modalHead">
+        <h3>Спец-приз открыт ✨🎁</h3>
+      </div>
+      <div class="modalBody">
+        <p><b>Покупочка на WB или в ЗЯ</b> — официально разрешена 😌💗</p>
+        <p>Ты закрыла 40 дел. Это заслуженно.</p>
+        <div class="modalActions">
+          <button class="btn" id="rewardLaterBtn">Ок, позже</button>
+          <button class="btn primary" id="rewardClaimBtn">Забрала ✨</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
 <script>
   // ---------- Utils ----------
@@ -460,18 +598,30 @@
   const state = LS.get(STATE_KEY, {
     mood: "🙂",
     habits: [
-      { id: crypto.randomUUID(), title: "вода", emoji:"💧", color:"sky", createdAt: Date.now() },
-      { id: crypto.randomUUID(), title: "растяжка", emoji:"🧘", color:"lavender", createdAt: Date.now() },
-      { id: crypto.randomUUID(), title: "без сладкого", emoji:"🍓", color:"pink", createdAt: Date.now() },
-      { id: crypto.randomUUID(), title: "10 минут чтения", emoji:"📖", color:"peach", createdAt: Date.now() },
+      { id: crypto.randomUUID(), title: "работа...", emoji:"😶", color:"sky", createdAt: Date.now() },
+      { id: crypto.randomUUID(), title: "ДИПЛОМ", emoji:"🙄", color:"lavender", createdAt: Date.now() },
+      { id: crypto.randomUUID(), title: "программирование", emoji:"👔💻", color:"lavender", createdAt: Date.now() },
+      { id: crypto.randomUUID(), title: "йога", emoji:"🤸‍♀", color:"sky", createdAt: Date.now() },
+      { id: crypto.randomUUID(), title: "чтение научной литературы", emoji:"📚", color:"mint", createdAt: Date.now() },
+      { id: crypto.randomUUID(), title: "чтение для удовольствия", emoji:"🎀", color:"pink", createdAt: Date.now() },
+      { id: crypto.randomUUID(), title: "минимум тиктока! (1 час)", emoji:"😪", color:"peach", createdAt: Date.now() },
     ],
     // logs: { "YYYY-MM-DD": { habitId: true/false } }
     logs: {},
     // dayCompletions: { "YYYY-MM-DD": true } (для "серии дня")
-    days: {}
+    days: {},
+    // points & reward
+    points: 0,
+    rewards: 0,
+    pointed: {} // { "YYYY-MM-DD": { habitId: true } }
   });
 
   const save = () => LS.set(STATE_KEY, state);
+
+  // migration for older saved state
+  state.points ??= 0;
+  state.rewards ??= 0;
+  state.pointed ??= {};
 
   // ---------- DOM ----------
   const elSubtitle = document.getElementById("subtitle");
@@ -493,6 +643,16 @@
   const newTitle = document.getElementById("newTitle");
   const newEmoji = document.getElementById("newEmoji");
   const newColor = document.getElementById("newColor");
+
+  const pointsNowEl = document.getElementById("pointsNow");
+  const pointsGoalEl = document.getElementById("pointsGoal");
+  const pointsBarEl = document.getElementById("pointsBar");
+
+  const stickerGridEl = document.getElementById("stickerGrid");
+
+  const rewardModal = document.getElementById("rewardModal");
+  const rewardLaterBtn = document.getElementById("rewardLaterBtn");
+  const rewardClaimBtn = document.getElementById("rewardClaimBtn");
 
   // ---------- Logic ----------
   function getTodayLog(){
@@ -520,12 +680,10 @@
   }
 
   function calcDayStreak(){
-    // серия закрытых дней подряд (когда все привычки выполнены)
-    const keys = Object.keys(state.days).sort(); // YYYY-MM-DD
+    const keys = Object.keys(state.days).sort();
     if(keys.length === 0) return 0;
 
     const today = todayKey();
-    // считаем до сегодняшнего дня включительно, если сегодня закрыт — ок, иначе считаем до вчера
     const end = state.days[today] ? today : shiftDate(today, -1);
 
     let streak = 0;
@@ -545,7 +703,6 @@
   }
 
   function calcBestStreak(){
-    // лучший стрик по закрытым дням в истории
     const doneDays = Object.keys(state.days).filter(k => state.days[k]).sort();
     let best = 0, cur = 0;
     let prev = null;
@@ -564,13 +721,12 @@
 
   function calcWeekRate(){
     const today = todayKey();
-    let totalDays = 7;
     let good = 0;
     for(let i=0;i<7;i++){
       const day = shiftDate(today, -i);
       if(state.days[day]) good++;
     }
-    return Math.round((good/totalDays)*100);
+    return Math.round((good/7)*100);
   }
 
   function renderMood(){
@@ -580,10 +736,162 @@
     });
   }
 
+  function getAccent(key){
+    const m = { pink:"var(--pink)", lavender:"var(--lav)", mint:"var(--mint)", peach:"var(--peach)", sky:"var(--sky)" };
+    return m[key] || "var(--lav)";
+  }
+
+  function pickTag(key){
+    const m = { pink:"сладко", lavender:"спокойно", mint:"свежо", peach:"уютно", sky:"нежно" };
+    return m[key] || "миленько";
+  }
+
+  function calcHabitStreak(habitId){
+    const today = todayKey();
+    let streak = 0;
+    let cursor = today;
+    while(true){
+      const log = state.logs[cursor] || {};
+      if(log[habitId]){
+        streak++;
+        cursor = shiftDate(cursor, -1);
+      } else break;
+    }
+    return streak;
+  }
+
+  // ---------- Pick-me progress & stickers ----------
+  const POINTS_GOAL = 40;
+
+  function svgData(svg){
+    return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+  }
+
+  const STICKERS = [
+    { name:"kitty", label:"котик", src: svgData(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="220" height="220" viewBox="0 0 220 220">
+        <defs>
+          <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#FCE7F3"/><stop offset="1" stop-color="#E0F2FE"/>
+          </linearGradient>
+        </defs>
+        <rect x="0" y="0" width="220" height="220" rx="40" fill="url(#g)"/>
+        <path d="M70 92 L52 62 Q48 52 58 52 L78 68" fill="#fff" opacity=".9"/>
+        <path d="M150 92 L168 62 Q172 52 162 52 L142 68" fill="#fff" opacity=".9"/>
+        <ellipse cx="110" cy="124" rx="62" ry="56" fill="#fff" opacity=".92"/>
+        <circle cx="88" cy="118" r="6" fill="#1f2430" opacity=".75"/>
+        <circle cx="132" cy="118" r="6" fill="#1f2430" opacity=".75"/>
+        <path d="M104 130 Q110 136 116 130" stroke="#1f2430" stroke-width="4" stroke-linecap="round" fill="none" opacity=".75"/>
+        <circle cx="78" cy="132" r="10" fill="#FCE7F3" opacity=".85"/>
+        <circle cx="142" cy="132" r="10" fill="#FCE7F3" opacity=".85"/>
+        <path d="M58 122 Q38 118 26 108" stroke="#1f2430" stroke-width="4" stroke-linecap="round" opacity=".25"/>
+        <path d="M162 122 Q182 118 194 108" stroke="#1f2430" stroke-width="4" stroke-linecap="round" opacity=".25"/>
+      </svg>
+    `)},
+    { name:"bow", label:"бантик", src: svgData(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="220" height="220" viewBox="0 0 220 220">
+        <rect width="220" height="220" rx="40" fill="#EDE9FE"/>
+        <path d="M110 110 C80 78 46 74 46 110 C46 146 86 142 110 110Z" fill="#fff" opacity=".9"/>
+        <path d="M110 110 C140 78 174 74 174 110 C174 146 134 142 110 110Z" fill="#fff" opacity=".9"/>
+        <circle cx="110" cy="110" r="18" fill="#FCE7F3"/>
+        <circle cx="104" cy="106" r="4" fill="#fff" opacity=".8"/>
+      </svg>
+    `)},
+    { name:"kitty2", label:"мяу", src: svgData(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="220" height="220" viewBox="0 0 220 220">
+        <rect width="220" height="220" rx="40" fill="#D1FAE5"/>
+        <ellipse cx="110" cy="126" rx="70" ry="58" fill="#fff" opacity=".92"/>
+        <path d="M72 106 L54 78 Q50 68 60 68 L82 88" fill="#fff" opacity=".9"/>
+        <path d="M148 106 L166 78 Q170 68 160 68 L138 88" fill="#fff" opacity=".9"/>
+        <circle cx="92" cy="122" r="6" fill="#1f2430" opacity=".75"/>
+        <circle cx="128" cy="122" r="6" fill="#1f2430" opacity=".75"/>
+        <path d="M110 132 l-7 6 h14z" fill="#1f2430" opacity=".55"/>
+        <path d="M110 138 Q100 148 90 140" stroke="#1f2430" stroke-width="4" stroke-linecap="round" fill="none" opacity=".35"/>
+        <path d="M110 138 Q120 148 130 140" stroke="#1f2430" stroke-width="4" stroke-linecap="round" fill="none" opacity=".35"/>
+      </svg>
+    `)},
+    { name:"sparkle", label:"блеск", src: svgData(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="220" height="220" viewBox="0 0 220 220">
+        <rect width="220" height="220" rx="40" fill="#FFEDD5"/>
+        <path d="M110 40 L126 96 L180 110 L126 124 L110 180 L94 124 L40 110 L94 96Z" fill="#fff" opacity=".92"/>
+        <circle cx="60" cy="70" r="10" fill="#E0F2FE" opacity=".9"/>
+        <circle cx="166" cy="150" r="12" fill="#FCE7F3" opacity=".9"/>
+        <circle cx="150" cy="72" r="7" fill="#EDE9FE" opacity=".9"/>
+      </svg>
+    `)},
+    { name:"bow2", label:"ленточка", src: svgData(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="220" height="220" viewBox="0 0 220 220">
+        <rect width="220" height="220" rx="40" fill="#E0F2FE"/>
+        <path d="M52 116 C52 86 84 86 110 110 C84 134 52 146 52 116Z" fill="#fff" opacity=".9"/>
+        <path d="M168 116 C168 86 136 86 110 110 C136 134 168 146 168 116Z" fill="#fff" opacity=".9"/>
+        <rect x="98" y="98" width="24" height="24" rx="10" fill="#FCE7F3"/>
+        <path d="M110 122 C106 138 96 156 84 170" stroke="#fff" stroke-width="8" stroke-linecap="round" opacity=".7"/>
+        <path d="M110 122 C114 138 124 156 136 170" stroke="#fff" stroke-width="8" stroke-linecap="round" opacity=".7"/>
+      </svg>
+    `)},
+    { name:"kitty3", label:"пикми", src: svgData(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="220" height="220" viewBox="0 0 220 220">
+        <rect width="220" height="220" rx="40" fill="#FCE7F3"/>
+        <ellipse cx="110" cy="128" rx="68" ry="56" fill="#fff" opacity=".92"/>
+        <path d="M86 144 Q110 162 134 144" stroke="#1f2430" stroke-width="6" stroke-linecap="round" fill="none" opacity=".35"/>
+        <circle cx="90" cy="122" r="6" fill="#1f2430" opacity=".75"/>
+        <circle cx="130" cy="122" r="6" fill="#1f2430" opacity=".75"/>
+        <path d="M70 112 Q56 104 48 92" stroke="#1f2430" stroke-width="4" stroke-linecap="round" opacity=".18"/>
+        <path d="M150 112 Q164 104 172 92" stroke="#1f2430" stroke-width="4" stroke-linecap="round" opacity=".18"/>
+        <circle cx="78" cy="134" r="9" fill="#E0F2FE" opacity=".9"/>
+        <circle cx="142" cy="134" r="9" fill="#E0F2FE" opacity=".9"/>
+      </svg>
+    `)},
+  ];
+
+  function renderStickers(){
+    if(!stickerGridEl) return;
+    stickerGridEl.innerHTML = "";
+    for(const s of STICKERS.slice(0,6)){
+      const box = document.createElement("div");
+      box.className = "sticker";
+      box.innerHTML = `<img alt="${s.label}" src="${s.src}"><small>${s.label}</small>`;
+      stickerGridEl.appendChild(box);
+    }
+  }
+
+  function updateProgressUI(){
+    const now = state.points || 0;
+    const shown = now % POINTS_GOAL;
+    pointsNowEl.textContent = String(shown);
+    pointsGoalEl.textContent = String(POINTS_GOAL);
+    const pct = (shown / POINTS_GOAL) * 100;
+    pointsBarEl.style.width = `${Math.min(100, pct)}%`;
+  }
+
+  function showReward(){
+    rewardModal.classList.add("show");
+    rewardModal.setAttribute("aria-hidden", "false");
+  }
+  function hideReward(){
+    rewardModal.classList.remove("show");
+    rewardModal.setAttribute("aria-hidden", "true");
+  }
+
+  function maybeReward(){
+    if(state.points > 0 && state.points % POINTS_GOAL === 0){
+      popConfetti(90);
+      showReward();
+    }
+  }
+
+  function addPointOnceToday(habitId){
+    const day = todayKey();
+    state.pointed[day] = state.pointed[day] || {};
+    if(state.pointed[day][habitId]) return;
+    state.pointed[day][habitId] = true;
+    state.points = (state.points || 0) + 1;
+    save();
+  }
+
   function render(){
     elSubtitle.textContent = `Сегодня — ${fmtDate()}`;
 
-    // list
     elList.innerHTML = "";
     for(const h of state.habits){
       const row = document.createElement("div");
@@ -604,7 +912,6 @@
       const sub = document.createElement("div");
       sub.className = "sub";
 
-      // simple streak per habit (consecutive done days incl. today if done)
       const habitStreak = calcHabitStreak(h.id);
       const pill1 = document.createElement("span");
       pill1.className = "pill";
@@ -628,7 +935,6 @@
       del.title = "Удалить привычку";
       del.onclick = () => {
         state.habits = state.habits.filter(x => x.id !== h.id);
-        // cleanup today's log entry
         const log = getTodayLog();
         delete log[h.id];
         save();
@@ -647,9 +953,16 @@
       `;
 
       check.onclick = () => {
-        const next = !isDoneToday(h.id);
+        const was = isDoneToday(h.id);
+        const next = !was;
         setDoneToday(h.id, next);
-        if(next) popConfetti(16);
+
+        if(!was && next){
+          addPointOnceToday(h.id);
+          popConfetti(16);
+          maybeReward();
+        }
+
         render();
       };
 
@@ -663,7 +976,6 @@
     doneCountEl.textContent = String(done);
     totalCountEl.textContent = String(total);
 
-    // cuteness is a silly metric: mood weight + completion
     const moodBoost = (state.mood === "🙂") ? 10 : (state.mood === "😐") ? 0 : -10;
     const base = total ? Math.round((done/total)*100) : 100;
     cutenessEl.textContent = String(Math.max(0, Math.min(100, base + moodBoost)));
@@ -672,31 +984,9 @@
     bestStreakEl.textContent = String(calcBestStreak());
     weekRateEl.textContent = `${calcWeekRate()}%`;
 
+    updateProgressUI();
+    renderStickers();
     renderMood();
-  }
-
-  function getAccent(key){
-    const m = { pink:"var(--pink)", lavender:"var(--lav)", mint:"var(--mint)", peach:"var(--peach)", sky:"var(--sky)" };
-    return m[key] || "var(--lav)";
-  }
-  function pickTag(key){
-    const m = { pink:"sweet", lavender:"calm", mint:"fresh", peach:"cozy", sky:"soft" };
-    return m[key] || "cute";
-  }
-
-  function calcHabitStreak(habitId){
-    // consecutive done days up to today
-    const today = todayKey();
-    let streak = 0;
-    let cursor = today;
-    while(true){
-      const log = state.logs[cursor] || {};
-      if(log[habitId]){
-        streak++;
-        cursor = shiftDate(cursor, -1);
-      } else break;
-    }
-    return streak;
   }
 
   // ---------- Events ----------
@@ -727,15 +1017,18 @@
   });
 
   addBtn.addEventListener("click", ()=>{
-    const title = (newTitle.value || "").trim();
-    const emoji = (newEmoji.value || "").trim() || "✨";
+    const titleRaw = (newTitle.value || "");
+    const emojiRaw = (newEmoji.value || "");
+
+    const title = titleRaw.replace(/\s+/g, " ").trim();
+    const emoji = emojiRaw.replace(/\s+/g, "").trim() || "✨";
     const color = newColor.value;
 
     if(!title){
       alert("Напиши название привычки (например, “вода”) 🙂");
       return;
     }
-    state.habits.unshift({ id: crypto.randomUUID(), title, emoji, color, createdAt: Date.now() });
+    state.habits.unshift({ id: crypto.randomUUID(), title, emoji: emoji.slice(0, 6), color, createdAt: Date.now() });
     newTitle.value = "";
     newEmoji.value = "";
     save();
@@ -748,6 +1041,13 @@
     delete state.days[k];
     save();
     render();
+  });
+
+  rewardLaterBtn.addEventListener("click", hideReward);
+  rewardClaimBtn.addEventListener("click", ()=>{
+    state.rewards = (state.rewards || 0) + 1;
+    save();
+    hideReward();
   });
 
   // ---------- Confetti ----------
