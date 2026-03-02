@@ -1000,21 +1000,27 @@
   });
 
   closeDayBtn.addEventListener("click", ()=>{
-    const {done,total} = calcDoneCounts();
-    const k = todayKey();
-    if(total === 0){
-      alert("Добавь хотя бы одну привычку справа 🙂");
-      return;
-    }
-    if(done < total){
-      alert("Ещё чуть-чуть: закрой все привычки, и день станет ✨закрытым✨");
-      return;
-    }
-    state.days[k] = true;
-    save();
-    popConfetti(60);
-    render();
-  });
+  const {done,total} = calcDoneCounts();
+  const k = todayKey();
+
+  if(total === 0){
+    alert("Добавь хотя бы одну привычку справа 🙂");
+    return;
+  }
+
+  // ✅ теперь можно закрывать день даже не выполнив всё
+  // считаем день “успешным”, если done > 0 (можешь поставить, например, done >= 3)
+  if(done > 0){
+    state.days[k] = true;     // засчитываем в стрик
+    popConfetti(40);
+  } else {
+    // если ничего не сделано — просто закрываем без стрика
+    state.days[k] = false;
+  }
+
+  save();
+  render();
+});
 
   addBtn.addEventListener("click", ()=>{
     const titleRaw = (newTitle.value || "");
