@@ -452,6 +452,53 @@
       justify-content:flex-end;
       flex-wrap:wrap;
     }
+    /* --- Calendar modal --- */
+.calBtnRow{ display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
+
+.calGrid{
+  display:grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap:8px;
+  margin-top: 12px;
+}
+.dayCell{
+  border-radius: 16px;
+  padding:10px 10px;
+  border:1px solid rgba(255,255,255,.92);
+  background: rgba(255,255,255,.70);
+  box-shadow: var(--shadow2);
+  min-height: 58px;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+}
+.dayCell .d{
+  font-weight:800;
+  font-size: 12px;
+  color: rgba(31,36,48,.78);
+}
+.dayCell .m{
+  margin-top:6px;
+  font-size: 11px;
+  color: rgba(31,36,48,.60);
+  line-height:1.2;
+}
+
+/* состояния */
+.dayCell.good{ background: linear-gradient(135deg, rgba(209,250,229,.90), rgba(224,242,254,.85)); }
+.dayCell.ok{   background: linear-gradient(135deg, rgba(252,231,243,.90), rgba(224,242,254,.70)); }
+.dayCell.bad{  background: linear-gradient(135deg, rgba(255,237,213,.95), rgba(252,231,243,.75)); }
+.dayCell.empty{ background: rgba(255,255,255,.60); opacity:.75; }
+
+.weekHdr{
+  display:grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap:8px;
+  margin-top: 10px;
+  color: rgba(31,36,48,.55);
+  font-size: 11px;
+}
+.weekHdr div{ text-align:center; }
   </style>
 </head>
 
@@ -513,6 +560,9 @@
 
             <button class="btn" id="addBtn">Добавить ➕</button>
             <button class="btn danger" id="resetBtn">Сбросить день ↺</button>
+            <div class="calBtnRow">
+              <button class="btn" id="openCalBtn">Календарь 🗓️</button>
+            </div>
           </div>
         </div>
 
@@ -572,7 +622,25 @@
       </div>
     </div>
   </div>
-
+  <div class="modalBackdrop" id="calModal" aria-hidden="true">
+    <div class="modal">
+      <div class="modalHead">
+        <h3>Календарь ✨</h3>
+      </div>
+      <div class="modalBody">
+        <p>💚 хороший день (достигнут порог), 💗 так себе, 🤍 пусто.</p>
+  
+        <div class="weekHdr">
+          <div>Пн</div><div>Вт</div><div>Ср</div><div>Чт</div><div>Пт</div><div>Сб</div><div>Вс</div>
+        </div>
+        <div class="calGrid" id="calGrid"></div>
+  
+        <div class="modalActions">
+          <button class="btn primary" id="calCloseBtn">Закрыть</button>
+        </div>
+      </div>
+    </div>
+  </div>
 <script>
   // ---------- Utils ----------
   const pad2 = n => String(n).padStart(2,'0');
@@ -613,7 +681,13 @@
     // points & reward
     points: 0,
     rewards: 0,
-    pointed: {} // { "YYYY-MM-DD": { habitId: true } }
+    pointed: {}, // { "YYYY-MM-DD": { habitId: true } }
+ 
+    dayStats: {},      // { "YYYY-MM-DD": { done, total, ratio } }
+    pointsByDay: {},   // { "YYYY-MM-DD": number } сколько очков начислено за этот день
+    points: 0,
+    rewards: 0,
+    pointed: {}        // можно оставить, но оно больше не нужно
   });
 
   const save = () => LS.set(STATE_KEY, state);
@@ -622,8 +696,17 @@
   state.points ??= 0;
   state.rewards ??= 0;
   state.pointed ??= {};
+  state.dayStats ??= {};
+  state.pointsByDay ??= {};
+  state.points ??= 0;
+  state.rewards ??= 0;
 
   // ---------- DOM ----------
+  const openCalBtn = document.getElementById("openCalBtn");
+const calModal = document.getElementById("calModal");
+const calCloseBtn = document.getElementById("calCloseBtn");
+const calGrid = document.getElementById("calGrid");
+
   const elSubtitle = document.getElementById("subtitle");
   const elMood = document.getElementById("mood");
   const elList = document.getElementById("habitList");
@@ -701,7 +784,78 @@
     dt.setDate(dt.getDate() + deltaDays);
     return `${dt.getFullYear()}-${pad2(dt.getMonth()+1)}-${pad2(dt.getDate())}`;
   }
+  function openCal(){
+  calModal.classList.add("show");
+  calModal.setAttribute("aria-hidden","false");
+  renderCalendar();
+}
+function closeCal(){
+  calModal.classList.remove("show");
+  calModal.setAttribute("aria-hidden","true");
+}
 
+function renderCalendar(){
+  if(!calGrid) return;
+  calGrid.innerHTML = "";
+
+  // последние 35 дней (5 недель)
+  const today = todayKey();
+  const days = [];
+  for(let i=34;i>=0;i--){
+    days.push(shiftDate(today, -i));
+  }
+
+  // подгоняем старт под Пн: добавим пустые ячейки в начале
+  // dayOfWeek: 0=Вс ... 6=Сб => хотим Пн=0
+  const [y,m,d] = days[0].split("-").map(Number);
+  const start = new Date(y, m-1, d);
+  const jsDow = start.getDay();              // 0..6 (Вс..Сб)
+  const monIndex = (jsDow + 6) % 7;          // Пн=0..Вс=6
+  for(let i=0;i<monIndex;i++){
+    const blank = document.createElement("div");
+    blank.className = "dayCell empty";
+    blank.innerHTML = `<div class="d"> </div><div class="m"> </div>`;
+    calGrid.appendChild(blank);
+  }
+
+  for(const day of days){
+    const st = state.dayStats?.[day];
+    const isClosed = (day in (state.dayStats||{})); // закрывали день => есть статистика
+    const ratio = st?.ratio ?? null;
+
+    // классы
+    let cls = "dayCell";
+    if(!isClosed){
+      cls += " empty";
+    } else if((state.days?.[day]) === true){
+      cls += " good";
+    } else {
+      // закрыт, но не good
+      // если что-то сделано — ok, если 0 — bad
+      cls += (st?.done > 0) ? " ok" : " bad";
+    }
+
+    const dd = Number(day.slice(8,10));
+    const mm = Number(day.slice(5,7));
+    const cell = document.createElement("div");
+    cell.className = cls;
+
+    let line = "не закрыт";
+    if(isClosed){
+      const done = st.done ?? 0;
+      const total = st.total ?? 0;
+      const pct = total ? Math.round((done/total)*100) : 0;
+      line = `${done}/${total} • ${pct}%`;
+    }
+
+    cell.innerHTML = `
+      <div class="d">${dd}.${String(mm).padStart(2,"0")}</div>
+      <div class="m">${line}</div>
+    `;
+
+    calGrid.appendChild(cell);
+  }
+}
   function calcBestStreak(){
     const doneDays = Object.keys(state.days).filter(k => state.days[k]).sort();
     let best = 0, cur = 0;
@@ -958,11 +1112,8 @@
         setDoneToday(h.id, next);
 
         if(!was && next){
-          addPointOnceToday(h.id);
-          popConfetti(16);
-          maybeReward();
-        }
-
+          popConfetti(16); // конфетти оставляем
+          }
         render();
       };
 
@@ -998,27 +1149,45 @@
       render();
     }
   });
+  openCalBtn.addEventListener("click", openCal);
+calCloseBtn.addEventListener("click", closeCal);
 
   closeDayBtn.addEventListener("click", ()=>{
   const {done,total} = calcDoneCounts();
   const k = todayKey();
 
   if(total === 0){
-    alert("Добавь хотя бы одну привычку справа 🙂");
+    alert("Добавь хотя бы одну привычку 🙂");
     return;
   }
 
-  // ✅ теперь можно закрывать день даже не выполнив всё
-  // считаем день “успешным”, если done > 0 (можешь поставить, например, done >= 3)
-  if(done > 0){
-    state.days[k] = true;     // засчитываем в стрик
-    popConfetti(40);
-  } else {
-    // если ничего не сделано — просто закрываем без стрика
-    state.days[k] = false;
-  }
+  // 1) сохраняем статистику дня
+  const ratio = total ? (done / total) : 0;
+  state.dayStats[k] = { done, total, ratio };
+
+  // 2) определяем хороший/плохой день (порог можно менять)
+  const GOOD_THRESHOLD = 0.35;          // 35% выполнения = уже хороший день
+  const good = ratio >= GOOD_THRESHOLD;
+  state.days[k] = good;
+
+  // 3) начисляем очки ТОЛЬКО при закрытии дня
+  //    Например: +done очков (сколько задач сделал — столько очков)
+  const earned = done;
+
+  // если день уже закрывали раньше — пересчитаем корректно
+  const prevEarned = state.pointsByDay[k] || 0;
+  state.points = Math.max(0, (state.points || 0) - prevEarned + earned);
+  state.pointsByDay[k] = earned;
 
   save();
+
+  // визуал
+  if(good) popConfetti(60);
+  if((state.points || 0) > 0 && (state.points % POINTS_GOAL === 0)){
+    popConfetti(90);
+    showReward();
+  }
+
   render();
 });
 
@@ -1042,12 +1211,21 @@
   });
 
   resetBtn.addEventListener("click", ()=>{
-    const k = todayKey();
-    state.logs[k] = {};
-    delete state.days[k];
-    save();
-    render();
-  });
+  const k = todayKey();
+
+  // откат очков, если день уже закрывали
+  const prevEarned = state.pointsByDay?.[k] || 0;
+  state.points = Math.max(0, (state.points || 0) - prevEarned);
+  if(state.pointsByDay) delete state.pointsByDay[k];
+
+  // очищаем логи/оценку дня
+  state.logs[k] = {};
+  if(state.days) delete state.days[k];
+  if(state.dayStats) delete state.dayStats[k];
+
+  save();
+  render();
+});
 
   rewardLaterBtn.addEventListener("click", hideReward);
   rewardClaimBtn.addEventListener("click", ()=>{
